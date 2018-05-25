@@ -1253,7 +1253,45 @@ LOCAL_LABEL(DoWrite):
     .endm
     
     .macro UPDATE_GC_SHADOW name, ptrReg, valReg
-        // Todo: implement, debugging helper
+#ifdef WRITE_BARRIER_CHECK
+        push {pShadow}
+        bkpt
+
+        // Compute address of shadow heap location:
+        //   pShadow = g_GCShadow + (ptrReg - g_lowest_address)
+        ldr __wbScratch, =g_lowest_address
+        ldr __wbScratch, [__wbScratch]
+        sub pShadow, \ptrReg, __wbScratch
+        ldr __wbScratch, =g_GCShadow
+        ldr __wbScratch, [__wbScratch]
+        add pShadow, __wbScratch
+
+        // if (pShadow >= g_GCShadowEnd) goto end
+        ldr __wbScratch, =g_GCShadowEnd
+        ldr __wbScratch, [__wbScratch]
+        cmp pShadow, __wbScratch
+        bhs 0f
+
+        // *pShadow = $valReg
+        str \valReg, [pShadow]
+
+        // Ensure that the write to the shadow heap occurs before the read from the GC heap so that race
+        // conditions are caught by INVALIDGCVALUE.
+        dmb
+
+        // if (*ptrReg == valReg) goto end
+        ldr __wbScratch, [\ptrReg]
+        cmp __wbScratch, \valReg
+        beq 0f
+
+        // *pShadow = INVALIDGCVALUE (0xcccccccd)
+        movw __wbScratch, #0xcccd
+        movt __wbScratch, #0xcccc
+        str __wbScratch, [pShadow]
+
+0:
+        pop {pShadow}
+#endif // WRITE_BARRIER_CHECK
     .endm
     
     .macro UPDATE_CARD_TABLE name, ptrReg, valReg, mp, postGrow, tmpReg
