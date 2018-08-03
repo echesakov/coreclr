@@ -1702,4 +1702,206 @@ void CodeGen::genCodeForMulLong(GenTreeMultiRegOp* node)
     genProduceReg(node);
 }
 
+void CodeGen::genPushFltRegs(regMaskTP regMask)
+{
+    assert(regMask != 0);                        // Don't call uness we have some registers to push
+    assert((regMask & RBM_ALLFLOAT) == regMask); // Only floasting point registers should be in regMask
+
+    regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
+    int       slots = genCountBits(regMask);
+    // regMask should be contiguously set
+    regMaskTP tmpMask = ((regMask >> lowReg) + 1); // tmpMask should have a single bit set
+    assert((tmpMask & (tmpMask - 1)) == 0);
+    assert(lowReg == REG_F16); // Currently we expect to start at F16 in the unwind codes
+
+    // Our calling convention requires that we only use vpush for TYP_DOUBLE registers
+    noway_assert(floatRegCanHoldType(lowReg, TYP_DOUBLE));
+    noway_assert((slots % 2) == 0);
+
+    getEmitter()->emitIns_R_I(INS_vpush, EA_8BYTE, lowReg, slots / 2);
+}
+
+void CodeGen::genPopFltRegs(regMaskTP regMask)
+{
+    assert(regMask != 0);                        // Don't call uness we have some registers to pop
+    assert((regMask & RBM_ALLFLOAT) == regMask); // Only floasting point registers should be in regMask
+
+    regNumber lowReg = genRegNumFromMask(genFindLowestBit(regMask));
+    int       slots = genCountBits(regMask);
+    // regMask should be contiguously set
+    regMaskTP tmpMask = ((regMask >> lowReg) + 1); // tmpMask should have a single bit set
+    assert((tmpMask & (tmpMask - 1)) == 0);
+
+    // Our calling convention requires that we only use vpop for TYP_DOUBLE registers
+    noway_assert(floatRegCanHoldType(lowReg, TYP_DOUBLE));
+    noway_assert((slots % 2) == 0);
+
+    getEmitter()->emitIns_R_I(INS_vpop, EA_8BYTE, lowReg, slots / 2);
+}
+
+/*-----------------------------------------------------------------------------
+ *
+ *  If we have a jmp call, then the argument registers cannot be used in the
+ *  epilog. So return the current call's argument registers as the argument
+ *  registers for the jmp call.
+ */
+regMaskTP CodeGen::genJmpCallArgMask()
+{
+    assert(compiler->compGeneratingEpilog);
+
+    regMaskTP argMask = RBM_NONE;
+    for (unsigned varNum = 0; varNum < compiler->info.compArgsCount; ++varNum)
+    {
+        const LclVarDsc& desc = compiler->lvaTable[varNum];
+        if (desc.lvIsRegArg)
+        {
+            argMask |= genRegMask(desc.lvArgReg);
+        }
+    }
+    return argMask;
+}
+
+/*-----------------------------------------------------------------------------
+ *
+ *  Free the local stack frame: add to SP.
+ *  If epilog unwind hasn't been started, and we generate code, we start unwind
+ *  and set *pUnwindStarted = true.
+ */
+
+void CodeGen::genFreeLclFrame(unsigned frameSize, /* IN OUT */ bool* pUnwindStarted, bool jmpEpilog)
+{
+    assert(compiler->compGeneratingEpilog);
+
+    if (frameSize == 0)
+        return;
+
+    // Add 'frameSize' to SP.
+    //
+    // Unfortunately, we can't just use:
+    //
+    //      inst_RV_IV(INS_add, REG_SPBASE, frameSize, EA_PTRSIZE);
+    //
+    // because we need to generate proper unwind codes for each instruction generated,
+    // and large frame sizes might generate a temp register load which might
+    // need an unwind code. We don't want to generate a "NOP" code for this
+    // temp register load; we want the unwind codes to start after that.
+
+    if (arm_Valid_Imm_For_Instr(INS_add, frameSize, INS_FLAGS_DONT_CARE))
+    {
+        if (!*pUnwindStarted)
+        {
+            compiler->unwindBegEpilog();
+            *pUnwindStarted = true;
+        }
+
+        getEmitter()->emitIns_R_I(INS_add, EA_PTRSIZE, REG_SPBASE, frameSize, INS_FLAGS_DONT_CARE);
+    }
+    else
+    {
+        regMaskTP grabMask = RBM_INT_CALLEE_TRASH;
+        if (jmpEpilog)
+        {
+            // Do not use argument registers as scratch registers in the jmp epilog.
+            grabMask &= ~genJmpCallArgMask();
+        }
+        regNumber tmpReg = REG_TMP_0;
+        instGen_Set_Reg_To_Imm(EA_PTRSIZE, tmpReg, frameSize);
+        if (*pUnwindStarted)
+        {
+            compiler->unwindPadding();
+        }
+
+        // We're going to generate an unwindable instruction, so check again if
+        // we need to start the unwind codes.
+
+        if (!*pUnwindStarted)
+        {
+            compiler->unwindBegEpilog();
+            *pUnwindStarted = true;
+        }
+
+        getEmitter()->emitIns_R_R(INS_add, EA_PTRSIZE, REG_SPBASE, tmpReg, INS_FLAGS_DONT_CARE);
+    }
+
+    compiler->unwindAllocStack(frameSize);
+}
+
+/*-----------------------------------------------------------------------------
+ *
+ *  Move of relocatable displacement value to register
+ */
+void CodeGen::genMov32RelocatableDisplacement(BasicBlock* block, regNumber reg)
+{
+    getEmitter()->emitIns_R_L(INS_movw, EA_4BYTE_DSP_RELOC, block, reg);
+    getEmitter()->emitIns_R_L(INS_movt, EA_4BYTE_DSP_RELOC, block, reg);
+
+    if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELATIVE_CODE_RELOCS))
+    {
+        getEmitter()->emitIns_R_R_R(INS_add, EA_4BYTE_DSP_RELOC, reg, reg, REG_PC);
+    }
+}
+
+/*-----------------------------------------------------------------------------
+ *
+ *  Move of relocatable data-label to register
+ */
+void CodeGen::genMov32RelocatableDataLabel(unsigned value, regNumber reg)
+{
+    getEmitter()->emitIns_R_D(INS_movw, EA_HANDLE_CNS_RELOC, value, reg);
+    getEmitter()->emitIns_R_D(INS_movt, EA_HANDLE_CNS_RELOC, value, reg);
+
+    if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELATIVE_CODE_RELOCS))
+    {
+        getEmitter()->emitIns_R_R_R(INS_add, EA_HANDLE_CNS_RELOC, reg, reg, REG_PC);
+    }
+}
+
+/*-----------------------------------------------------------------------------
+ *
+ * Move of relocatable immediate to register
+ */
+void CodeGen::genMov32RelocatableImmediate(emitAttr size, BYTE* addr, regNumber reg)
+{
+    _ASSERTE(EA_IS_RELOC(size));
+
+    getEmitter()->emitIns_MovRelocatableImmediate(INS_movw, size, reg, addr);
+    getEmitter()->emitIns_MovRelocatableImmediate(INS_movt, size, reg, addr);
+
+    if (compiler->opts.jitFlags->IsSet(JitFlags::JIT_FLAG_RELATIVE_CODE_RELOCS))
+    {
+        getEmitter()->emitIns_R_R_R(INS_add, size, reg, reg, REG_PC);
+    }
+}
+
+/*-----------------------------------------------------------------------------
+ *
+ *  Returns register mask to push/pop to allocate a small stack frame,
+ *  instead of using "sub sp" / "add sp". Returns RBM_NONE if either frame size
+ *  is zero, or if we should use "sub sp" / "add sp" instead of push/pop.
+ */
+regMaskTP CodeGen::genStackAllocRegisterMask(unsigned frameSize, regMaskTP maskCalleeSavedFloat)
+{
+    assert(compiler->compGeneratingProlog || compiler->compGeneratingEpilog);
+
+    // We can't do this optimization with callee saved floating point registers because
+    // the stack would be allocated in a wrong spot.
+    if (maskCalleeSavedFloat != RBM_NONE)
+        return RBM_NONE;
+
+    // Allocate space for small frames by pushing extra registers. It generates smaller and faster code
+    // that extra sub sp,XXX/add sp,XXX.
+    // R0 and R1 may be used by return value. Keep things simple and just skip the optimization
+    // for the 3*REGSIZE_BYTES and 4*REGSIZE_BYTES cases. They are less common and they have more
+    // significant negative side-effects (more memory bus traffic).
+    switch (frameSize)
+    {
+    case REGSIZE_BYTES:
+        return RBM_R3;
+    case 2 * REGSIZE_BYTES:
+        return RBM_R2 | RBM_R3;
+    default:
+        return RBM_NONE;
+    }
+}
+
 #endif // _TARGET_ARM_
