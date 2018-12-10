@@ -111,7 +111,7 @@ jobs:
 #
 
 # Pri0 (CI)
-- ${{ if eq(variables['System.TeamProject'], 'public') }}:
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), endsWith(variables['Build.DefinitionName'], '-coreclr')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
