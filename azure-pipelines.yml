@@ -110,7 +110,7 @@ jobs:
 # Checked test builds
 #
 
-# Pri0 (CI)
+# Pri0 (PullRequest)
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), endsWith(variables['Build.DefinitionName'], '-coreclr')) }}:
   - template: eng/platform-matrix.yml
     parameters:
