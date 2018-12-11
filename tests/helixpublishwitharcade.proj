@@ -7,11 +7,9 @@
   <Import Project="..\dir.props" />
 
   <PropertyGroup>
-    <HelixSource Condition=" '$(HelixSource)' == '' ">pr/dotnet/coreclr</HelixSource>
-    <HelixType Condition=" '$(HelixType)' == '' ">test/functional/cli</HelixType>
-    <HelixType Condition=" '$(Scenario)' != '' and '$(Scenario)' != 'normal' ">$(HelixType)/$(Scenario)</HelixType>
-    <HelixBuild Condition=" '$(HelixBuild)' == '' ">$(BUILD_BUILDNUMBER)</HelixBuild>
-    <HelixBuild Condition=" '$(HelixBuild)' == '' ">default</HelixBuild>
+    <HelixSource>$(_HelixSource)</HelixSource>
+    <HelixType>$(_HelixType)</HelixType>
+    <HelixBuild>$(BUILD_BUILDNUMBER)</HelixBuild>
 
     <EnableAzurePipelinesReporter Condition=" '$(EnableAzurePipelinesReporter)' != 'false' ">true</EnableAzurePipelinesReporter>
     <WaitForWorkItemCompletion>true</WaitForWorkItemCompletion>
