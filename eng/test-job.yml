@@ -67,18 +67,6 @@ jobs:
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
         - name: helixTargetQueuesArg
           value: ${{ format('/p:HelixTargetQueues=\"{0}\"', parameters.helixQueuesInternal) }}
-      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
-        - name: helixSourceArg
-          value: '/p:HelixSource=\"pr/dotnet/coreclr/$(Build.SourceBranch)\"'
-      - ${{ if ne(variables['System.TeamProject'], 'public') }}:
-        - name: helixSourceArg
-          value: '/p:HelixSource=\"official/dotnet/coreclr/$(Build.SourceBranch)\"'
-      - ${{ if eq(parameters.crossgen, 'true') }}:
-        - name: helixTypeArg
-          value: ${{ format('/p:HelixType=\"test/functional/r2r/cli/pri{0}\"', parameters.priority) }}
-      - ${{ if eq(parameters.crossgen, 'false') }}:
-        - name: helixTypeArg
-          value: ${{ format('/p:HelixType=\"test/functional/cli/pri{0}\"', parameters.priority) }}
       - name: commonMSBuildArgs
         value: ${{ format('/maxcpucount /p:__BuildOS={0} /p:__BuildArch={1} /p:__BuildType={2}', parameters.osGroup, parameters.archType, parameters.buildConfig) }}
 
@@ -143,7 +131,7 @@ jobs:
 
     # Send tests to helix
     - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
-      - script: ./Tools/dotnetcli/dotnet msbuild tests/helixpublishwitharcade.proj $(commonMSBuildArgs) $(scenariosArg) $(helixTargetQueuesArg) $(helixSourceArg) $(helixTypeArg)
+      - script: ./Tools/dotnetcli/dotnet msbuild tests/helixpublishwitharcade.proj $(commonMSBuildArgs) $(scenariosArg) $(helixTargetQueuesArg)
         displayName: Send test jobs to Helix
         env:
           ${{ if eq(variables['System.TeamProject'], 'internal') }}:
@@ -154,7 +142,7 @@ jobs:
             HelixAccessToken: $(BotAccount-dotnet-github-anon-kaonashi-bot-helix-token)
           SYSTEM_ACCESSTOKEN: $(System.AccessToken)
     - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-      - script: .\Tools\dotnetcli\dotnet msbuild tests\helixpublishwitharcade.proj $(commonMSBuildArgs) $(scenariosArg) $(helixTargetQueuesArg) $(helixSourceArg) $(helixTypeArg)
+      - script: .\Tools\dotnetcli\dotnet msbuild tests\helixpublishwitharcade.proj $(commonMSBuildArgs) $(scenariosArg) $(helixTargetQueuesArg)
         displayName: Send test jobs to Helix
         env:
           ${{ if eq(variables['System.TeamProject'], 'internal') }}:
