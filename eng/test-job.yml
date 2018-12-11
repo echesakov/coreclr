@@ -62,7 +62,7 @@ jobs:
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
         - name: helixTargetQueuesArg
           value: ${{ format('/p:HelixTargetQueues=\"{0}\"', parameters.helixQueuesInternal) }}
-      - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest')) }}:
+      - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - name: helixSourceArg
           value: ${{ format('/p:HelixSource=\"pr/dotnet/coreclr/{0}\"', Build.SourceBranch) }}
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
