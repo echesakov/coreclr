@@ -9,6 +9,7 @@ parameters:
   dependsOn: ''
   containerName: ''
   timeoutInMinutes: ''
+  helixType: ''
   variables: {} ## any extra variables to add to the defaults defined below
 
 jobs:
