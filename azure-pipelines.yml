@@ -118,6 +118,7 @@ jobs:
       buildConfig: checked
       jobParameters:
         priority: 0
+        timeoutInMinutes: 120
 
 # Pri1 (CI)
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'Manual'), endsWith(variables['Build.DefinitionName'], '-coreclr-jitstress')) }}:
