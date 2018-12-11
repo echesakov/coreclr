@@ -64,10 +64,10 @@ jobs:
           value: ${{ format('/p:HelixTargetQueues=\"{0}\"', parameters.helixQueuesInternal) }}
       - ${{ if eq(variables['System.TeamProject'], 'public') }}:
         - name: helixSourceArg
-          value: ${{ format('/p:HelixSource=\"pr/dotnet/coreclr/{0}\"', Build.SourceBranch) }}
+          value: '/p:HelixSource=\"pr/dotnet/coreclr/$(Build.SourceBranch)\"'
       - ${{ if ne(variables['System.TeamProject'], 'public') }}:
         - name: helixSourceArg
-          value: ${{ format('/p:HelixSource=\"official/dotnet/coreclr/{0}\"', Build.SourceBranch) }}
+          value: '/p:HelixSource=\"official/dotnet/coreclr/$(Build.SourceBranch)\"'
       - ${{ if eq(parameters.crossgen, 'true') }}:
         - name: helixTypeArg
           value: ${{ format('/p:HelixType=\"test/functional/r2r/cli/pri{0}\"', parameters.priority) }}
