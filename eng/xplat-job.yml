@@ -23,6 +23,9 @@ jobs:
     dependsOn: ${{ parameters.dependsOn }}
     timeoutInMinutes: ${{ parameters.timeoutInMinutes }}
 
+    helixRepo: 'dotnet/coreclr'
+    helixType: ${{ parameters.helixType }}
+
     pool:
       ${{ if and(eq(parameters.osGroup, 'Linux'), eq(variables['System.TeamProject'], 'public')) }}:
         name: Hosted Ubuntu 1604
