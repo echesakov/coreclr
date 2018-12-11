@@ -155,7 +155,7 @@ jobs:
 #
 
 # Pri1
-- ${{ if ne(variables['System.TeamProject'], 'public') }}:
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
@@ -164,7 +164,7 @@ jobs:
         priority: 1
 
 # Pri1 crossgen (Official Build)
-- ${{ if ne(variables['System.TeamProject'], 'public') }}:
+- ${{ if and(ne(variables['System.TeamProject'], 'public'), ne(variables['Build.Reason'], 'PullRequest')) }}:
   - template: eng/platform-matrix.yml
     parameters:
       jobTemplate: test-job.yml
