@@ -121,6 +121,15 @@ jobs:
         timeoutInMinutes: 120
 
 # Pri1 (CI)
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
+  - template: eng/platform-matrix.yml
+    parameters:
+      jobTemplate: test-job.yml
+      buildConfig: checked
+      jobParameters:
+        priority: 1
+
+# Pri1 (CI)
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'Manual'), endsWith(variables['Build.DefinitionName'], '-coreclr-jitstress')) }}:
   - template: eng/platform-matrix.yml
     parameters:
