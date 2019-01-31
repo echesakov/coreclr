@@ -112,35 +112,16 @@ jobs:
       - script: build-test.cmd $(buildConfig) $(archType) $(priorityArg) $(crossgenArg)
         displayName: Build tests
 
-
-    # Send tests to Helix
-    - template: /eng/send-to-helix-step.yml
-      parameters:
-        displayName: Send tests to Helix
-        buildConfig: ${{ parameters.buildConfig }}
-        archType: ${{ parameters.archType }}
-        osGroup: ${{ parameters.osGroup }}
-
-        helixBuild: $(Build.BuildNumber)
-        helixSource: $(_HelixSource)
-        helixType: $(_HelixType)
-        helixQueues: ${{ parameters.helixQueues.asString }}
-
-        ${{ if eq(parameters.helixQueues.asString, '') }}:
-          condition: false
-
-        publishTestResults: true
-        timeoutPerTestCollectionInMinutes: ${{ parameters.timeoutPerTestCollectionInMinutes }}
-        timeoutPerTestInMinutes: ${{ parameters.timeoutPerTestInMinutes }}
-
-        runCrossGen: ${{ parameters.readyToRun }}
-
-        ${{ if eq(variables['System.TeamProject'], 'internal') }}:
-          # Access token variable for internal project from the
-          # DotNet-HelixApi-Access variable group
-          helixAccessToken: $(HelixApiAccessToken)
-
-        ${{ if eq(variables['System.TeamProject'], 'public') }}:
-          creator: coreclr-pulls
-
-        scenarios: ${{ parameters.scenarios.asString }}
+    # Publish logs as pipeline artifacts
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - task: PublishPipelineArtifact@0
+        displayName: Save logs as pipeline artifact
+        inputs:
+          artifactName: ${{ format('{0}_{1}_{2}_test_Logs', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+          targetPath: $(Build.SourcesDirectory)/bin/Logs
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - task: PublishPipelineArtifact@0
+        displayName: Save logs as pipeline artifact
+        inputs:
+          artifactName: ${{ format('{0}_{1}_{2}_test_Logs', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+          targetPath: $(Build.SourcesDirectory)\bin\Logs
