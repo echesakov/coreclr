@@ -143,3 +143,17 @@ jobs:
           creator: coreclr-pulls
 
         scenarios: ${{ parameters.scenarios.asString }}
+
+    # Save MSBuild binary log as pipeline artifact
+    - ${{ if ne(parameters.osGroup, 'Windows_NT') }}:
+      - task: PublishPipelineArtifact@0
+        displayName: Save logs as pipeline artifact
+        inputs:
+          artifactName: ${{ format('{0}_{1}_{2}_Logs', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+          targetPath: $(Build.SourcesDirectory)/bin/Logs
+    - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
+      - task: PublishPipelineArtifact@0
+        displayName: Save logs as pipeline artifact
+        inputs:
+          artifactName: ${{ format('{0}_{1}_{2}_Logs', parameters.osIdentifier, parameters.archType, parameters.buildConfig) }}
+          targetPath: $(Build.SourcesDirectory)\bin\Logs

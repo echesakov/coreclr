@@ -18,7 +18,7 @@ parameters:
 
 steps:
 - ${{ if eq(parameters.osGroup, 'Windows_NT') }}:
-  - powershell: eng\common\msbuild.ps1 -ci tests\helixpublishwitharcade.proj /maxcpucount
+  - powershell: eng\common\msbuild.ps1 -ci tests\helixpublishwitharcade.proj /maxcpucount /bl:$(Build.SourcesDirectory)\bin\Logs\MSBuild__HelixPublishWithArcade.binlog
     displayName: ${{ parameters.displayName }}
     ${{ if ne(parameters.condition, '') }}:
       condition: ${{ parameters.condition }}
@@ -41,7 +41,7 @@ steps:
         SYSTEM_ACCESSTOKEN: $(System.AccessToken)
 
 - ${{ if or(eq(parameters.osGroup, 'Linux'), eq(parameters.osGroup, 'OSX')) }}:
-  - script: ./eng/common/msbuild.sh --ci tests/helixpublishwitharcade.proj /maxcpucount
+  - script: ./eng/common/msbuild.sh --ci tests/helixpublishwitharcade.proj /maxcpucount /bl:$(Build.SourcesDirectory)/bin/Logs/MSBuild__HelixPublishWithArcade.binlog
     displayName: ${{ parameters.displayName }}
     ${{ if ne(parameters.condition, '') }}:
       condition: ${{ parameters.condition }}
