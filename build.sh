@@ -473,6 +473,7 @@ build_CoreLib()
                              /p:UsePartialNGENOptimization=false /maxcpucount \
                              $__ProjectDir/build.proj \
                              /flp:Verbosity=normal\;LogFile=$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.log \
+                             /bl:$__LogsDir/System.Private.CoreLib_$__BuildOS__$__BuildArch__$__BuildType.binlog \
                              /p:__IntermediatesDir=$__IntermediatesDir /p:__RootBinDir=$__RootBinDir /p:BuildNugetPackage=false /p:UseSharedCompilation=false \
                              $__CommonMSBuildArgs $__ExtraBuildArgs $__UnprocessedBuildArgs
 

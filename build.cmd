@@ -650,10 +650,12 @@ if %__BuildCoreLib% EQU 1 (
         set __BuildLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.log"
         set __BuildWrn="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.wrn"
         set __BuildErr="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.err"
+        set __BuildBinLog="%__LogsDir%\!__BuildLogRootName!_%__BuildOS%__%__BuildArch%__%__BuildType%.binlog"
         set __MsbuildLog=/flp:Verbosity=normal;LogFile=!__BuildLog!
         set __MsbuildWrn=/flp1:WarningsOnly;LogFile=!__BuildWrn!
         set __MsbuildErr=/flp2:ErrorsOnly;LogFile=!__BuildErr!
-        set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr!
+        set __MsbuildBinLog=/bl:!__BuildBinLog!
+        set __Logging=!__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog!
 
         call %__ProjectDir%\msbuild.cmd /nologo /verbosity:minimal /clp:Summary /nodeReuse:false^
           /l:BinClashLogger,Tools/net46/Microsoft.DotNet.Build.Tasks.dll;LogFile=binclash.log^
