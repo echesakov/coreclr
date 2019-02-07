@@ -385,23 +385,21 @@ build_MSBuild_projects()
         # __SkipPackageRestore and __SkipTargetingPackBuild used  to control build by tests/src/dirs.proj
         export __SkipPackageRestore=false
         export __SkipTargetingPackBuild=false
-        export __BuildLoopCount=2
-        export __TestGroupToBuild=1
+        export __NumberOfGroups=16
         __AppendToLog=false
 
         if [ -n "$__priority1" ]; then
-            export __BuildLoopCount=16
-            export __TestGroupToBuild=2
+            export __NumberOfGroups=16
         fi
 
-        for (( slice=1 ; slice <= __BuildLoopCount; slice = slice + 1 ))
+        for (( __GroupNumberToBuild=1 ; __GroupNumberToBuild <= __NumberOfGroups; __GroupNumberToBuild = __GroupNumberToBuild + 1 ))
         do
             __msbuildLog="\"/flp:Verbosity=normal;LogFile=${__BuildLog};Append=${__AppendToLog}\""
             __msbuildWrn="\"/flp1:WarningsOnly;LogFile=${__BuildWrn};Append=${__AppendToLog}\""
             __msbuildErr="\"/flp2:ErrorsOnly;LogFile=${__BuildErr};Append=${__AppendToLog}\""
-            __msbuildBinLog="\"/bl:$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.${slice}.binlog\""
+            __msbuildBinLog="\"/bl:$__LogsDir/${__BuildLogRootName}.${__BuildOS}.${__BuildArch}.${__BuildType}.${__GroupNumberToBuild}.binlog\""
 
-            export TestBuildSlice=$slice
+            export __GroupNumberToBuild
 
             # Generate build command
             buildArgs=("/nologo" "/verbosity:minimal" "/clp:Summary")

@@ -338,26 +338,24 @@ REM See https://github.com/Microsoft/msbuild/issues/2993
 
 set __SkipPackageRestore=false
 set __SkipTargetingPackBuild=false
-set __BuildLoopCount=2
-set __TestGroupToBuild=1
+set __NumberOfGroups=16
 
-if %__Priority% GTR 0 (set __BuildLoopCount=16&set __TestGroupToBuild=2)
-echo %__MsgPrefix%Building tests group %__TestGroupToBuild% with %__BuildLoopCount% subgroups
+if %__Priority% GTR 0 (set __NumberOfGroups=64)
+echo %__MsgPrefix%Building tests
 
-for /l %%G in (1, 1, %__BuildLoopCount%) do (
+for /l %%G in (1, 1, %__NumberOfGroups%) do (
 
     set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%";Append=!__AppendToLog!
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%";Append=!__AppendToLog!
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%";Append=!__AppendToLog!
 
-    set TestBuildSlice=%%G
+    set __GroupNumberToBuild=%%G
 
-    set __BuildBinLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%__%TestBuildSlice%.binlog
-    set __MsbuildBinLog=/bl:%__BuildBinLog%
+    set __BuildBinLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%__!__GroupNumberToBuild!.binlog
+    set __MsbuildBinLog=/bl:!__BuildBinLog!
 
     echo Running: msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog! %TargetsWindowsMsbuildArg% %__msbuildArgs% %__BuildAgainstPackagesArg% !__PriorityArg! %__UnprocessedBuildArgs%
-
-    call msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! %TargetsWindowsMsbuildArg% %__msbuildArgs% %__BuildAgainstPackagesArg% !__PriorityArg! %__UnprocessedBuildArgs%
+    call msbuild %__ProjectDir%\tests\build.proj !__MsbuildLog! !__MsbuildWrn! !__MsbuildErr! !__MsbuildBinLog! %TargetsWindowsMsbuildArg% %__msbuildArgs% %__BuildAgainstPackagesArg% !__PriorityArg! %__UnprocessedBuildArgs% /nodeReuse:false
 
     if errorlevel 1 (
         echo %__MsgPrefix%Error: build failed. Refer to the build log files for details:
