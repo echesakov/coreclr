@@ -343,13 +343,16 @@ set __NumberOfGroups=16
 if %__Priority% GTR 0 (set __NumberOfGroups=64)
 echo %__MsgPrefix%Building tests
 
-for /l %%G in (0, 1, %__NumberOfGroups% - 1) do (
+set /a __NumberOfGroupsMinusOne=%__NumberOfGroups%-1
+
+for /l %%G in (0, 1, %__NumberOfGroupsMinusOne%) do (
 
     set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%";Append=!__AppendToLog!
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%";Append=!__AppendToLog!
     set __MsbuildErr=/flp2:ErrorsOnly;LogFile="%__BuildErr%";Append=!__AppendToLog!
 
     set __GroupNumberToBuild=%%G
+    echo __GroupNumberToBuild = !__GroupNumberToBuild!
 
     set __BuildBinLog=%__LogsDir%\%__BuildLogRootName%_%__BuildOS%__%__BuildArch%__%__BuildType%__!__GroupNumberToBuild!.binlog
     set __MsbuildBinLog=/bl:!__BuildBinLog!
