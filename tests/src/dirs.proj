@@ -34,25 +34,39 @@
     </ItemGroup>
 
     <ItemGroup>
-      <Project Include="*\**\*.csproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-
-      <Project Include="*\**\*.ilproj" Exclude="@(DisabledProjects)">
-        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
-      </Project>
-
-      <Project Update="@(Project)">
-        <GroupNumber>$([MSBuild]::MakeRelative($(ProjectDir), %(FullPath)).GetHashCode())</GroupNumber>
-      </Project>
-
-      <Project Update="@(Project)">
-        <GroupNumber>$([MSBuild]::BitwiseAnd(%(GroupNumber), $([MSBuild]::Subtract($(__NumberOfGroups), 1))))</GroupNumber>
-      </Project>
-
-      <Project Remove="@(Project)" Condition="'%(GroupNumber)' != '$(__GroupNumberToBuild)'" />
+      <_Project Include="*\**\*.csproj" Exclude="@(DisabledProjects)" />
+      <_Project Include="*\**\*.ilproj" Exclude="@(DisabledProjects)" />
     </ItemGroup>
 
+    <PropertyGroup>
+      <_TotalNumber>@(_Project->Count())</_TotalNumber>
+
+      <!-- NumberPerGroup = Ceiling(TotalNumber / NumberOfGroups) -->
+      <_NumberPerGroup>$([System.Math]::Ceiling(
+          $([MSBuild]::Divide($(_TotalNumber), $(__NumberOfGroups)))
+          ))</_NumberPerGroup>
+
+      <!-- NumberToSkip = GroupNumberToBuild * NumberPerGroup -->
+      <_NumberToSkip>$([MSBuild]::Multiply($(__GroupNumberToBuild), $(_NumberPerGroup)))</_NumberToSkip>
+
+      <!-- NumberToTake = Min(NumberPerGroup, TotalNumber - NumberToSkip) -->
+      <_NumberToTake>$([System.Math]::Min(
+          $(_NumberPerGroup),
+          $([MSBuild]::Subtract($(_TotalNumber), $(_NumberToSkip)))
+          ))</_NumberToTake>
+
+      <_NumberToTakeMinusOne>$([MSBuild]::Subtract($(_NumberToTake), 1))</_NumberToTakeMinusOne>
+
+      <_Projects>@(_Project)</_Projects>
+      <_ProjectsToBuild>$([System.Text.RegularExpressions.Regex]::Replace($(_Projects),
+          "^((?:[^;]+;){$(_NumberToSkip)})((?:[^;]+;){$(_NumberToTakeMinusOne)}[^;]+)(;[^;]+)*$", "$2"))</_ProjectsToBuild>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <Project Include="$(_ProjectsToBuild.Split('%3B'))">
+        <AdditionalProperties>OSGroup=$(OSGroup)</AdditionalProperties>
+      </Project>
+    </ItemGroup>
   </Target>
 
   <Import Project="..\dir.traversal.targets" />

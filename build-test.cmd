@@ -343,7 +343,7 @@ set __NumberOfGroups=16
 if %__Priority% GTR 0 (set __NumberOfGroups=64)
 echo %__MsgPrefix%Building tests
 
-for /l %%G in (1, 1, %__NumberOfGroups%) do (
+for /l %%G in (0, 1, %__NumberOfGroups% - 1) do (
 
     set __MsbuildLog=/flp:Verbosity=normal;LogFile="%__BuildLog%";Append=!__AppendToLog!
     set __MsbuildWrn=/flp1:WarningsOnly;LogFile="%__BuildWrn%";Append=!__AppendToLog!

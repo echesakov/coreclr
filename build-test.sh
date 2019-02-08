@@ -392,7 +392,7 @@ build_MSBuild_projects()
             export __NumberOfGroups=16
         fi
 
-        for (( __GroupNumberToBuild=1 ; __GroupNumberToBuild <= __NumberOfGroups; __GroupNumberToBuild = __GroupNumberToBuild + 1 ))
+        for (( __GroupNumberToBuild=0 ; __GroupNumberToBuild < __NumberOfGroups; __GroupNumberToBuild = __GroupNumberToBuild + 1 ))
         do
             __msbuildLog="\"/flp:Verbosity=normal;LogFile=${__BuildLog};Append=${__AppendToLog}\""
             __msbuildWrn="\"/flp1:WarningsOnly;LogFile=${__BuildWrn};Append=${__AppendToLog}\""
@@ -413,7 +413,7 @@ build_MSBuild_projects()
             buildArgs+=("${__UnprocessedBuildArgs[@]}")
 
             nextCommand="\"$__ProjectRoot/dotnet.sh\" msbuild ${buildArgs[@]}"
-            echo "Building step '$stepName' slice=$slice via $nextCommand"
+            echo "Building step '$stepName' __GroupNumberToBuild=$__GroupNumberToBuild via $nextCommand"
             eval $nextCommand
 
             # Make sure everything is OK
