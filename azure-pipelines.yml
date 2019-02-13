@@ -150,6 +150,23 @@ jobs:
         # "PerTest" corresponds to individual test running time (i.e. __TestTimeout).
         timeoutPerTestInMinutes: 10
 
+# Pri1 (Pull Request)
+- ${{ if and(eq(variables['System.TeamProject'], 'public'), eq(variables['Build.Reason'], 'PullRequest'), endsWith(variables['Build.DefinitionName'], 'coreclr-outerloop-priority1')) }}:
+  - template: eng/platform-matrix.yml
+    parameters:
+      jobTemplate: test-job.yml
+      buildConfig: checked
+      jobParameters:
+        priority: 1
+        scenarios:
+          asString: 'normal,no_tiered_compilation'
+          asArray:
+          - normal
+          - no_tiered_compilation
+        timeoutTotalInMinutes: 360
+        timeoutPerTestCollectionInMinutes: 60
+        timeoutPerTestInMinutes: 10
+
 # Pri1 (CI)
 - ${{ if and(eq(variables['System.TeamProject'], 'public'), in(variables['Build.Reason'], 'IndividualCI', 'BatchedCI')) }}:
   - template: eng/platform-matrix.yml
